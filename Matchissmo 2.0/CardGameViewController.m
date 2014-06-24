@@ -14,14 +14,24 @@
 @property (strong, nonatomic) IBOutletCollection(UIButton) NSArray *cardButtons;
 @property (strong, nonatomic) CardMatchingGame *game;
 @property (weak, nonatomic) IBOutlet UILabel *scoreLabel;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *modeSelector;
+
+@property (weak, nonatomic) IBOutlet UILabel *resultsLabel;
+
+
+
 
 @end
 
 @implementation CardGameViewController
 
 - (CardMatchingGame *)game {
-    if (!_game) _game  = [[CardMatchingGame alloc] initWithCardCount:[self.cardButtons count]
+    if (!_game)
+    { _game  = [[CardMatchingGame alloc] initWithCardCount:[self.cardButtons count]
                                                            usingDeck:[self createDeck]];
+        [self touchSegmentedControl:self.modeSelector];
+        
+    }
     return _game;
 }
 
@@ -32,12 +42,27 @@
 
 
 
+
+
 - (IBAction)touchCardButton:(UIButton *)sender {
     
     int chosenButtonIndex = [self.cardButtons indexOfObject:sender];
     [self.game chooseCardAtIndex:chosenButtonIndex];
+    //If the mmodeSector is enabled, disable it
+    self.modeSelector.enabled = NO;
     [self updateUI] ;
   }
+- (IBAction)touchDealButton:(id)sender {
+    self.game = nil;
+    self.modeSelector.enabled = YES;
+   [self updateUI] ;
+    
+}
+- (IBAction)touchSegmentedControl:(UISegmentedControl *)sender {
+    self.game.maxMatchingCards = [sender titleForSegmentAtIndex:sender.selectedSegmentIndex].integerValue;
+    
+    
+}
 
 - (void)updateUI{
     for (UIButton *cardButton in self.cardButtons) {
@@ -48,6 +73,26 @@
         [cardButton setBackgroundImage:[self backgroundImageForCard:card]
                               forState:UIControlStateNormal];
         self.scoreLabel.text = [NSString stringWithFormat:@"Score: %d", self.game.score];
+        if (self.game) {
+            NSString *description = @"";
+            if ([self.game.lastChosenCards count]) {
+                NSMutableArray *cardContents = [NSMutableArray array];
+                for (Card *card in self.game.lastChosenCards) {
+                    [cardContents addObject:card.contents];
+                }
+                description = [cardContents componentsJoinedByString:@" "];
+            }
+            
+            if (self.game.lastScore > 0) {
+                description = [NSString stringWithFormat:@"Matched %@ for %d points.", description, self.game.lastScore];
+            } else if (self.game.lastScore < 0) {
+                
+                description = [NSString stringWithFormat:@"%@ don’t match! %d point penalty!", description, -self.game.lastScore];
+            }
+            
+             self.resultsLabel.text = description;
+        }
+       
     }
 
 
